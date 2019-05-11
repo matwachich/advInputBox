@@ -1,0 +1,78 @@
+#NoTrayIcon
+#include <EditConstants.au3>
+
+#include "advInputBox.au3"
+
+For $i = 1 To 3
+	Call("Example" & $i)
+Next
+
+; Simple login box
+Func Example1()
+	; thanks to the non-strictness of the JSON UDF, we can use non-strict JSON notation! (see NON-STRICT MODE in https://zserge.com/jsmn.html)
+	Local $sJSON = '{ title:"Login" controls:[' & _
+		'{type:"label", value:"Use this form to login to your account"}' & _
+		'{type:"input", id:"username", label:"Username"}' & _
+		'{type:"input", id:"password", label:"Password", style:"' & BitOR($GUI_SS_DEFAULT_INPUT,$ES_PASSWORD) & '"}' & _
+		'{type:"check", id:"remember", label:"Remember me", value:true}' & _
+	']}'
+
+	Local $oRet = advInputBox($sJSON)
+	If @error Then
+		MsgBox(64, "Example1", "Dialog canceled")
+	Else
+		MsgBox(64, "Example1", "Return: " & Json_Encode($oRet, 128))
+		; you can access individual values by ids:
+		; Json_ObjGet($oRet, "username")
+		; Json_ObjGet($oRet, "password")
+		; Json_ObjGet($oRet, "remember")
+	EndIf
+EndFunc
+
+; All controls
+Func Example2()
+	Local $sJSON = '{ title:"Showcase" font:[10, 600, 0, "Cambria"] controls:[' & _
+		'{type:"label", value:"Enter you personal informations (please :p)"},' & _
+		'{type:"input", id:"firstname", label:"First name"},' & _
+		'{type:"input", id:"lastname", label:"Last name"},' & _
+		'{type:"combo", id:"sexe", label:"Sexe", options:["Male", "Female"], selected:-1},' & _ ; selected = 0 for male, = 1 for female
+		'{type:"date", id:"dob", label:"Date of birth", value:"2000/01/01", style:0},' & _ ; $DTS_SHORTDATEFORMAT
+		'{type:"separator"},' & _
+		'{type:"edit", id:"address", label:"Address", lines:5},' & _
+		'{type:"check", id:"agree", label:"I agree to share my personnal informations with big brother", value:true}' & _
+	']}'
+
+	Local $oRet = advInputBox($sJSON)
+	If @error Then
+		MsgBox(64, "Example1", "Dialog canceled")
+	Else
+		MsgBox(64, "Example1", "Return: " & Json_Encode($oRet, 128))
+	EndIf
+EndFunc
+
+; Validation function
+Func Example3()
+	Local $sJSON = '{ title:"Login" font:[10, 400, 0, "Consolas"] controls:[' & _
+		'{type:"label", value:"Use this form to login to your account", font:[14, 600, 0, "Consolas"]}' & _
+		'{type:"input", id:"username", label:"Username"}' & _
+		'{type:"input", id:"password", label:"Password", style:"' & BitOR($GUI_SS_DEFAULT_INPUT,$ES_PASSWORD) & '"}' & _
+		'{type:"check", id:"remember", label:"Remember me", value:true}' & _
+	']}'
+
+	Local $oRet = advInputBox($sJSON, _validationFunc)
+	If @error Then
+		MsgBox(64, "Example1", "Dialog canceled")
+	Else
+		MsgBox(64, "Example1", "Return: " & Json_Encode($oRet, 128))
+	EndIf
+EndFunc
+
+Func _validationFunc($hGUI, $oData, $oCtrlIDs, $oLabelsCtrlIDs)
+	Local $sUser = Json_ObjGet($oData, "username"), $sPass = Json_ObjGet($oData, "password")
+	If $sUser == "admin" And $sPass == "password" Then Return True
+
+	GUICtrlSetBkColor(Json_ObjGet($oCtrlIDs, "username"), 0xFFCCCC)
+	GUICtrlSetBkColor(Json_ObjGet($oCtrlIDs, "password"), 0xFFCCCC)
+	GUICtrlSetData(Json_ObjGet($oCtrlIDs, "password"), "")
+	Return False
+EndFunc
