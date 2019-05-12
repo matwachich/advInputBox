@@ -53,28 +53,31 @@ JSON definition {
 	controls: [
 		{
 			type: "separator"
-			<
+
+			optionals:
+			----------
 			color: separator color (default: 0x000000)
-			>
 		}
 		{
-			type:  "label"
-			value: "Label text"
-			<
+			type: "label"
+			text: "Label text"
+
+			optionals:
+			----------
 			margin
-			style, exstyle, color, bkcolor, font: [size, weight, style, name]
-			>
+			style, exstyle, color, bkcolor, font
 		}
 		{
 			type:  "input"
 			id:    "name" (must be unique)
 			label: "label text"
-			<
-			value: "initial value"
 
+			optionals:
+			----------
+			value: "initial value"
 			margin
 			style, exstyle, color, bkcolor, font
-			labelColor, labelBkColor, labelStyle, labelExStyle, labelFont
+			labelStyle, labelExStyle, labelColor, labelBkColor, labelFont
 			>
 		}
 		{
@@ -82,38 +85,38 @@ JSON definition {
 			id:    "name" (must be unique)
 			label: "label text"
 			lines: linesCount (default is 3)
-			<
-			value: "initial value"
 
+			optionals:
+			----------
+			value: "initial value"
 			margin
 			style, exstyle, color, bkcolor, font
-			labelColor, labelBkColor, labelStyle, labelExStyle, labelFont
-			>
+			labelStyle, labelExStyle, labelColor, labelBkColor, labelFont
 		}
 		{
 			type:  "date"
 			id:    "name" (must be unique)
 			label: "label text"
-			<
-			value: "initial value"
 
+			optionals:
+			----------
+			value: "initial value"
 			margin
 			style, exstyle, color, bkcolor, font
-			labelColor, labelBkColor, labelStyle, labelExStyle, labelFont
-			>
+			labelStyle, labelExStyle, labelColor, labelBkColor, labelFont
 		}
 		{
 			type:  "combo"
 			id:    "name" (must be unique)
 			label: "label text"
-			<
+
+			optionals:
+			----------
 			options: ["option0", "option1" ...]
 			selected: 0|1|...|N OR "option0"|"option1"|...|"optionN"
-
 			margin
 			style, exstyle, color, bkcolor, font
-			labelColor, labelBkColor, labelStyle, labelExStyle, labelFont
-			>
+			labelStyle, labelExStyle, labelColor, labelBkColor, labelFont
 		}
 	]
 }
@@ -172,7 +175,7 @@ Func advInputBox($sJSON, $fnValidation = Null, $hParentGUI = Null)
 	Local $i = 0, $sType, $oLabel, $iMaxCalculatedLabelsWidth = 0
 	Do
 		$sType = StringLower(Json_ObjGet($aControls[$i], "type"))
-		If $sType <> "separator" And $sType <> "label" Then
+		If $sType <> "separator" And $sType <> "label" And $sType <> "inputLabel" And $sType <> "inputBtn" Then
 			; a label is mendatory for all input controls
 			If Not Json_ObjExists($aControls[$i], "label") Or Json_ObjGet($aControls[$i], "label") == "" Then
 				Json_ObjPut($aControls[$i], "label", Json_ObjGet($aControls[$i], "type") & ":" & Json_ObjGet($aControls[$i], "id"))
@@ -185,22 +188,22 @@ Func advInputBox($sJSON, $fnValidation = Null, $hParentGUI = Null)
 			; add inputLabel just befor the input control
 			$oLabel = Json_ObjCreate()
 			Json_ObjPut($oLabel, "type", "inputLabel")
-			Json_ObjPut($oLabel, "value", Json_ObjGet($aControls[$i], "label"))
+			Json_ObjPut($oLabel, "text", Json_ObjGet($aControls[$i], "label"))
 
 			If Json_ObjExists($aControls[$i], "margin") Then Json_ObjPut($oLabel, "margin", Json_ObjGet($aControls[$i], "margin"))
+			If Json_ObjExists($aControls[$i], "labelStyle") Then Json_ObjPut($oLabel, "style", Json_ObjGet($aControls[$i], "labelStyle"))
+			If Json_ObjExists($aControls[$i], "labelExStyle") Then Json_ObjPut($oLabel, "exstyle", Json_ObjGet($aControls[$i], "labelExStyle"))
 			If Json_ObjExists($aControls[$i], "labelColor") Then Json_ObjPut($oLabel, "color", Json_ObjGet($aControls[$i], "labelColor"))
 			If Json_ObjExists($aControls[$i], "labelBkColor") Then Json_ObjPut($oLabel, "bkcolor", Json_ObjGet($aControls[$i], "labelBkColor"))
-			If Json_ObjExists($aControls[$i], "margin") Then Json_ObjPut($oLabel, "margin", Json_ObjGet($aControls[$i], "margin"))
-			Json_ObjPut($oLabel, "style", __advInputBox_objGet($aControls[$i], "labelStyle", 2))
-			If Json_ObjExists($aControls[$i], "labelExStyle") Then Json_ObjPut($oLabel, "exstyle", Json_ObjGet($aControls[$i], "labelExStyle"))
 			If Json_ObjExists($aControls[$i], "labelFont") Then Json_ObjPut($oLabel, "font", Json_ObjGet($aControls[$i], "labelFont"))
 
-			_ArrayInsert($aControls, $i, $oLabel)
+			; input label default style is right aligned
+			If Not Json_ObjExists($oLabel, "style") Then Json_ObjPut($oLabel, "style", 2)
 
-			$i += 2
-		Else
+			_ArrayInsert($aControls, $i, $oLabel)
 			$i += 1
 		EndIf
+		$i += 1
 	Until $i >= UBound($aControls)
 
 	Local $iMaxLabelsAndInputsWidth = $iMaxCalculatedLabelsWidth + $iMargin + $iInputsWidth
@@ -216,67 +219,85 @@ Func advInputBox($sJSON, $fnValidation = Null, $hParentGUI = Null)
 				Json_ObjPut($aControls[$i], "_y", $iNextHeight)
 				Json_ObjPut($aControls[$i], "_w", $iMaxLabelsAndInputsWidth)
 				Json_ObjPut($aControls[$i], "_h", 1)
+
 				$iNextHeight += __advInputBox_objGet($aControls[$i], "margin", $iMargin) + 1
+			; ---
 			Case "label"
 				$aSZ = __advInputBox_stringSize( _
-					Json_ObjGet($aControls[$i], "value"), _
+					Json_ObjGet($aControls[$i], "text"), _
 					__advInputBox_objGet($aControls[$i], "font", $aDefaultFont), _
 					$iMaxLabelsAndInputsWidth _
 				)
+
 				Json_ObjPut($aControls[$i], "_x", $iMargin)
 				Json_ObjPut($aControls[$i], "_y", $iNextHeight)
 				Json_ObjPut($aControls[$i], "_w", $iMaxLabelsAndInputsWidth)
 				Json_ObjPut($aControls[$i], "_h", $aSZ[3])
+
 				$iNextHeight += $aSZ[3] + __advInputBox_objGet($aControls[$i], "margin", $iMargin)
+			; ---
 			Case "inputLabel"
 				$aSZ = __advInputBox_stringSize( _
-					Json_ObjGet($aControls[$i], "value"), _
+					Json_ObjGet($aControls[$i], "text"), _
 					__advInputBox_objGet($aControls[$i], "font", $aDefaultFont), _
 					$iMaxCalculatedLabelsWidth _
 				)
+
 				Json_ObjPut($aControls[$i], "_x", $iMargin)
 				Json_ObjPut($aControls[$i], "_y", $iNextHeight + $iInputLabelPadding)
 				Json_ObjPut($aControls[$i], "_w", $iMaxCalculatedLabelsWidth)
 				Json_ObjPut($aControls[$i], "_h", $aSZ[3])
+
 				$iInputLabelNextHeight = $iNextHeight + $aSZ[3] + __advInputBox_objGet($aControls[$i], "margin", $iMargin)
+			; ---
 			Case "input", "date", "combo"
 				$aSZ = __advInputBox_stringSize("A", __advInputBox_objGet($aControls[$i], "font", $aDefaultFont), $iInputsWidth)
+
 				Json_ObjPut($aControls[$i], "_x", $iMaxCalculatedLabelsWidth + (2 * $iMargin))
 				Json_ObjPut($aControls[$i], "_y", $iNextHeight)
 				Json_ObjPut($aControls[$i], "_w", $iInputsWidth)
 				Json_ObjPut($aControls[$i], "_h", $aSZ[3] + 4)
+
 				$iNextHeight += $aSZ[3] + 4 + __advInputBox_objGet($aControls[$i], "margin", $iMargin)
 				If $iInputLabelNextHeight > $iNextHeight Then $iNextHeight = $iInputLabelNextHeight
+			; ---
 			Case "edit"
 				$vTmp = Int(__advInputBox_objGet($aControls[$i], "lines", 3))
 				$aSZ = __advInputBox_stringSize( _
 					_StringRepeat("Line" & @CRLF, $vTmp - 1), _
 					__advInputBox_objGet($aControls[$i], "font", $aDefaultFont) _
 				)
+
 				Json_ObjPut($aControls[$i], "_x", $iMaxCalculatedLabelsWidth + (2 * $iMargin))
 				Json_ObjPut($aControls[$i], "_y", $iNextHeight)
 				Json_ObjPut($aControls[$i], "_w", $iInputsWidth)
 				Json_ObjPut($aControls[$i], "_h", $aSZ[3] + 21 + $vTmp)
+
 				$iNextHeight += $aSZ[3] + 21 + 4 + __advInputBox_objGet($aControls[$i], "margin", $iMargin)
 				If $iInputLabelNextHeight > $iNextHeight Then $iNextHeight = $iInputLabelNextHeight
+			; ---
 			Case "check"
 				$aSZ = __advInputBox_stringSize("A", __advInputBox_objGet($aControls[$i], "font", $aDefaultFont), $iInputsWidth)
+
 				Json_ObjPut($aControls[$i], "_x", $iMaxCalculatedLabelsWidth + (2 * $iMargin))
 				Json_ObjPut($aControls[$i], "_y", $iNextHeight)
 				Json_ObjPut($aControls[$i], "_w", $iInputsWidth)
 				Json_ObjPut($aControls[$i], "_h", $aSZ[3])
+
 				If $i < UBound($aControls) - 2 And StringLower(Json_ObjGet($aControls[$i + 2], "type")) == "check" Then
 					$iNextHeight += $aSZ[3]
 				Else
 					$iNextHeight += $aSZ[3] + __advInputBox_objGet($aControls[$i], "margin", $iMargin)
 					If $iInputLabelNextHeight > $iNextHeight Then $iNextHeight = $iInputLabelNextHeight
 				EndIf
+			; ---
+;~ 			Case "file"
+;~ 			Case "color"
+;~ 			Case "font"
 		EndSwitch
 	Next
 
 	; build Dialog
-	ConsoleWrite(Json_Encode($aControls, 128) & @CRLF)
-
 	Local $hGUI
 	Local $iGUIWidth = $iMaxLabelsAndInputsWidth + (2 * $iMargin)
 	Local $iGUIHeight = $iNextHeight + $iMargin + 25
@@ -304,7 +325,7 @@ Func advInputBox($sJSON, $fnValidation = Null, $hParentGUI = Null)
 				GUICtrlSetBkColor(-1, __advInputBox_objGet($aControls[$i], "color", 0x00000000))
 			Case "label", "inputLabel"
 				Json_ObjPut($aControls[$i], "_ctrlID", GUICtrlCreateLabel( _
-					Json_ObjGet($aControls[$i], "value"), _
+					Json_ObjGet($aControls[$i], "text"), _
 					Json_ObjGet($aControls[$i], "_x"), Json_ObjGet($aControls[$i], "_y"), _
 					Json_ObjGet($aControls[$i], "_w"), Json_ObjGet($aControls[$i], "_h"), _
 					__advInputBox_objGet($aControls[$i], "style", -1), __advInputBox_objGet($aControls[$i], "exstyle", -1) _
@@ -404,87 +425,6 @@ Func advInputBox($sJSON, $fnValidation = Null, $hParentGUI = Null)
 		EndIf
 	WEnd
 EndFunc
-
-; -------------------------------------------------------------------------------------------------
-; helpers to build JSON definition
-
-#cs
-TODO: really usefull?
-
-Func _advInputBox_fontArray($iSize, $iWeight, $iStyle, $sFontName)
-	Local $aFont[] = [$iSize, $iWeight, $iStyle, $sFontName]
-	Return $aFont
-EndFunc
-
-Func _advInputBox_Init($sTitle, $aFont = Default, $iLabelsMaxWidth = Default, $iInputsWidth = Default, $iMaxHeight = Default, $iMargin = Default, $iInputLabelPadding = Default)
-	Local $oDef = Json_ObjCreate()
-	Json_ObjPut($oDef, "title", $sTitle)
-	If IsArray($aFont) And UBound($aFont) == 4 Then Json_ObjPut($oDef, "font", $aFont)
-	If $iLabelsMaxWidth <> Default Then Json_ObjPut($oDef, "labelsMaxWidth", $iLabelsMaxWidth)
-	If $iInputsWidth <> Default Then Json_ObjPut($oDef, "inputsWidth", $iInputsWidth)
-	If $iMaxHeight <> Default Then Json_ObjPut($oDef, "maxHeight", $iMaxHeight)
-	If $iMargin <> Default Then Json_ObjPut($oDef, "margin", $iMargin)
-	If $iInputLabelPadding <> Default Then Json_ObjPut($oDef, "inputLabelPadding", $iInputLabelPadding)
-	Return $oDef
-EndFunc
-Func _advInputBox_SetGUIStyle(ByRef $oDef, $iStyle = Default, $iExStyle = Default, $iBkColor = Default)
-	If $iStyle <> Default Then Json_ObjPut($oDef, "style", $iStyle)
-	If $iExStyle <> Default Then Json_ObjPut($oDef, "exstyle", $iExStyle)
-	If $iBkColor <> Default Then Json_ObjPut($oDef, "bkcolor", $iBkColor)
-EndFunc
-Func _advInputBox_SetOKBtnStyle(ByRef $oDef, $sText = Default, $iColor = Default, $iBkColor = Default)
-	If $sText <> Default Then Json_ObjPut($oDef, "btnText", $sText)
-	If $iColor <> Default Then Json_ObjPut($oDef, "btnColor", $iColor)
-	If $iBkColor <> Default Then Json_ObjPut($oDef, "btnBkColor", $iBkColor)
-EndFunc
-
-Func _advInputBox_Label(ByRef $oDef, $sText, $iStyle = Default, $iExStyle = Default, $iMargin = Default, $iColor = Default, $iBkColor = Default, $aFont = Default)
-	Local $oCtrl = Json_ObjCreate()
-	Json_ObjPut($oCtrl, "type", "label")
-	Json_ObjPut($oCtrl, "value", $sText)
-	If $iStyle <> Default Then Json_ObjPut($oCtrl, "style", $iStyle)
-	If $iExStyle <> Default Then Json_ObjPut($oCtrl, "exstyle", $iExStyle)
-	If $iMargin <> Default Then Json_ObjPut($oCtrl, "margin", $iMargin)
-	If $iColor <> Default Then Json_ObjPut($oCtrl, "color", $iColor)
-	If $iBkColor <> Default Then Json_ObjPut($oCtrl, "bkcolor", $iBkColor)
-	If IsArray($aFont) And UBound($aFont) == 4 Default Then Json_ObjPut($oCtrl, "font", $aFont)
-	__advInputBox_buildAddCtrl($oDef, $oCtrl)
-EndFunc
-
-Func _advInputBox_Input(ByRef $oDef, $sID, $sLabel, $sValue = Default, _
-	$iStyle = Default, $iExStyle = Default, $iMargin = Default, $iColor = Default, $iBkColor = Default, $aFont = Default, _
-	$iLabelStyle = Default, $iLabelExStyle = Default, $iLabelColor = Default, $iLabelBkColor = Default, $aLabelFont = Default)
-	Local $oCtrl = Json_ObjCreate()
-	Json_ObjPut($oCtrl, "type", "input")
-	Json_ObjPut($oCtrl, "id", $sID)
-	Json_ObjPut($oCtrl, "label", $sLabel)
-	If $sValue <> Default Then Json_ObjPut($oCtrl, "value", $sValue)
-	If $iStyle <> Default Then Json_ObjPut($oCtrl, "style", $iStyle)
-	If $iExStyle <> Default Then Json_ObjPut($oCtrl, "exstyle", $iExStyle)
-	If $iMargin <> Default Then Json_ObjPut($oCtrl, "margin", $iMargin)
-	If $iColor <> Default Then Json_ObjPut($oCtrl, "color", $iColor)
-	If $iBkColor <> Default Then Json_ObjPut($oCtrl, "bkcolor", $iBkColor)
-	If IsArray($aFont) And UBound($aFont) == 4 Default Then Json_ObjPut($oCtrl, "font", $aFont)
-	If $iLabelStyle <> Default Then Json_ObjPut($oCtrl, "labelStyle", $iLabelStyle)
-	If $iLabelExStyle <> Default Then Json_ObjPut($oCtrl, "labelExStyle", $iLabelExStyle)
-	If $iLabelColor <> Default Then Json_ObjPut($oCtrl, "labelColor", $iLabelColor)
-	If $iLabelBkColor <> Default Then Json_ObjPut($oCtrl, "labelBkColor", $iLabelBkColor)
-	If IsArray($aLabelFont) And UBound($aLabelFont) == 4 Default Then Json_ObjPut($oCtrl, "labelFont", $aLabelFont)
-	__advInputBox_buildAddCtrl($oDef, $oCtrl)
-EndFunc
-
-
-Func __advInputBox_buildAddCtrl(ByRef $oDef, $oCtrl)
-	Local $aControls = Json_ObjGet($oDef, "controls")
-	If Not $aControls Then
-		Dim $aControls[1]
-		$aControls[0] = $oCtrl
-	Else
-		_ArrayAdd($aControls, $oCtrl)
-	EndIf
-	Json_ObjPut($oDef, "controls")
-EndFunc
-#ce
 
 ; -------------------------------------------------------------------------------------------------
 ; internals

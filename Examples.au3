@@ -11,7 +11,7 @@ Next
 Func Example1()
 	; thanks to the non-strictness of the JSON UDF, we can use non-strict JSON notation! (see NON-STRICT MODE in https://zserge.com/jsmn.html)
 	Local $sJSON = '{ title:"Login" controls:[' & _
-		'{type:"label", value:"Use this form to login to your account"}' & _
+		'{type:"label", text:"Use this form to login to your account"}' & _
 		'{type:"input", id:"username", label:"Username"}' & _
 		'{type:"input", id:"password", label:"Password", style:"' & BitOR($GUI_SS_DEFAULT_INPUT,$ES_PASSWORD) & '"}' & _
 		'{type:"check", id:"remember", label:"Remember me", value:true}' & _
@@ -32,7 +32,7 @@ EndFunc
 ; All controls
 Func Example2()
 	Local $sJSON = '{ title:"Showcase" font:[10, 600, 0, "Cambria"] controls:[' & _
-		'{type:"label", value:"Enter you personal informations (please :p)"},' & _
+		'{type:"label", text:"Enter you personal informations (please :p)"},' & _
 		'{type:"input", id:"firstname", label:"First name"},' & _
 		'{type:"input", id:"lastname", label:"Last name"},' & _
 		'{type:"combo", id:"sexe", label:"Sexe", options:["Male", "Female"], selected:-1},' & _ ; selected = 0 for male, = 1 for female
@@ -53,7 +53,7 @@ EndFunc
 ; Validation function
 Func Example3()
 	Local $sJSON = '{ title:"Login" font:[10, 400, 0, "Consolas"] controls:[' & _
-		'{type:"label", value:"Use this form to login to your account", font:[14, 600, 0, "Consolas"]}' & _
+		'{type:"label", text:"Use this form to login to your account", font:[14, 600, 0, "Consolas"]}' & _
 		'{type:"input", id:"username", label:"Username"}' & _
 		'{type:"input", id:"password", label:"Password", style:"' & BitOR($GUI_SS_DEFAULT_INPUT,$ES_PASSWORD) & '"}' & _
 		'{type:"check", id:"remember", label:"Remember me", value:true}' & _
