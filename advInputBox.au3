@@ -137,9 +137,11 @@ JSON definition {
 ;                                                               (inputs, dates, combo boxes, edits, check boxes), keyed by "id"s.
 ;                                            - $oLabelsCtrlIDs: JSON object containing the control IDs of the labels associated
 ;                                                               with each input control, keyed by "id"s.
+;                                            - $vUserData:      user data
 ;                                         If the function returns True, the advInputBox call will return the same $oData object.
 ;                                         Otherwise, nothing happens (the InputBox stays opened).
 ;                                         Default is Null (no callback, the functions returns immediatly on OK button press).
+;                  $vUserData           - [optional] user data passed to $fnValidation. Default is Null.
 ;                  $hParentGUI          - [optional] a handle to the parent GUI. Default is Null.
 ; Return values .: - On OK button press, if no validation callback is provided or if it returns True : the function returns a JSON
 ;                    object containing the data entered in the AdvInputBox, keyed by "id"s (see control definitions in the
@@ -153,7 +155,7 @@ JSON definition {
 ; Link ..........:
 ; Example .......: No
 ; ===============================================================================================================================
-Func advInputBox($sJSON, $fnValidation = Null, $hParentGUI = Null)
+Func advInputBox($sJSON, $fnValidation = Null, $vUserData = Null, $hParentGUI = Null)
 	Local $oJSON = Json_Decode($sJSON)
 	If @error Then Return SetError(-1, 0, Null)
 
@@ -416,7 +418,7 @@ Func advInputBox($sJSON, $fnValidation = Null, $hParentGUI = Null)
 							EndSwitch
 						EndIf
 					Next
-					If Not IsFunc($fnValidation) Or $fnValidation($hGUI, $oRet, $oCtrlIDs, $oLabelsIDs) Then
+					If Not IsFunc($fnValidation) Or $fnValidation($hGUI, $oRet, $oCtrlIDs, $oLabelsIDs, $vUserData) Then
 						GUIDelete($hGUI)
 						Opt("GUICloseOnEsc", $vTmp)
 						Return $oRet
