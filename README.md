@@ -35,13 +35,14 @@ Advanced InputBox for AutoIt3, with :
 ;                                            - $hInputBoxHGUI:  handle to the InputBox Dialog.
 ;                                            - $oData:          JSON object containing the data entered in the AdvInputBox, keyed
 ;                                                               by "id"s (see controls definitions).
-;                                            - $oCtrlIDs:       JSON object containing the control IDs of the input controls
-;                                                               (inputs, dates, combo boxes, edits, check boxes), keyed by "id"s.
-;                                            - $oLabelsCtrlIDs: JSON object containing the control IDs of the labels associated
-;                                                               with each input control, keyed by "id"s.
+;                                            - $oCtrlIDs:       JSON object containing the control IDs of the input and label
+;                                                               controls, keyed by "id"s.
+;                                                               { "id": [labelID, inputCtrlID], ... }
+;                                            - $vUserData:      user data
 ;                                         If the function returns True, the advInputBox call will return the same $oData object.
 ;                                         Otherwise, nothing happens (the InputBox stays opened).
 ;                                         Default is Null (no callback, the functions returns immediatly on OK button press).
+;                  $vUserData           - [optional] user data passed to $fnValidation. Default is Null.
 ;                  $hParentGUI          - [optional] a handle to the parent GUI. Default is Null.
 ; Return values .: - On OK button press, if no validation callback is provided or if it returns True : the function returns a JSON
 ;                    object containing the data entered in the AdvInputBox, keyed by "id"s (see control definitions in the
@@ -55,88 +56,94 @@ Advanced InputBox for AutoIt3, with :
 ; Link ..........:
 ; Example .......: No
 ; ===============================================================================================================================
+```
 
+```
 JSON definition {
 // all these values are optionals
-  title: "Window Title"
-  labelsMaxWidth: max width of labels column (left)
-  inputsWidth: max width of inputs column (right)
-  maxHeight: max Dialog height (if exceeded, it will use scroll boxes)
-  margin: default vertical and horizontal margin between controls and dialog borders
-  inputLabelPadding: vertical bias of the inputLabel according to it's control (default 2)
-  style: GUI style
-  exstyle: GUI extended style
-  bkcolor: GUISetBKColorbtnText: OK button text
-  btnColor: OK button color
-  btnBkColor: OK button BK colorfont: [size, weight, style, name]
+	title: "Window Title"
+	labelsMaxWidth: max width of labels column (left)
+	inputsWidth: max width of inputs column (right)
+	maxHeight: max Dialog height (if exceeded, it will use scroll boxes)
+	margin: default vertical and horizontal margin between controls and dialog borders
+	inputLabelPadding: vertical bias of the inputLabel according to it's control (default 2)
+	style: GUI style
+	exstyle: GUI extended style
+	bkcolor: GUISetBKColor
+	btnText: OK button text
+	btnColor: OK button color
+	btnBkColor: OK button BK color
+	font: [size, weight, style, name]
 
 // the only necessary one is this (note that in each control type, the values between <> are optionals)
-controls: [
-  {
-    type: "separator"
-    <
-    color: separator color (default: 0x000000)
-    >
-  }
-  {
-    type:  "label"
-    value: "Label text"
-    <
-    margin
-    style, exstyle, color, bkcolor, font: [size, weight, style, name]
-    >
-  }
-  {
-    type:  "input"
-    id:    "name" (must be unique)
-    label: "label text"
-    <
-    value: "initial value"
+	controls: [
+		{
+			type: "separator"
 
-    margin
-    style, exstyle, color, bkcolor, font
-    labelColor, labelBkColor, labelStyle, labelExStyle, labelFont
-    >
-  }
-  {
-    type:  "edit"
-    id:    "name" (must be unique)
-    label: "label text"
-    lines: linesCount (default is 3)
-    <
-    value: "initial value"
+			optionals:
+			----------
+			color: separator color (default: 0x000000)
+		}
+		{
+			type: "label"
+			text: "Label text"
 
-    margin
-    style, exstyle, color, bkcolor, font
-    labelColor, labelBkColor, labelStyle, labelExStyle, labelFont
-    >
-  }
-  {
-    type:  "date"
-    id:    "name" (must be unique)
-    label: "label text"
-    <
-    value: "initial value"
+			optionals:
+			----------
+			margin
+			style, exstyle, color, bkcolor, font
+		}
+		{
+			type:  "input"
+			id:    "name" (must be unique, without spaces)
+			label: "label text"
 
-    margin
-    style, exstyle, color, bkcolor, font
-    labelColor, labelBkColor, labelStyle, labelExStyle, labelFont
-    >
-  }
-  {
-    type:  "combo"
-    id:    "name" (must be unique)
-    label: "label text"
-    <
-    options: ["option0", "option1" ...]
-    selected: 0|1|...|N OR "option0"|"option1"|...|"optionN"
+			optionals:
+			----------
+			value: "initial value"
+			margin
+			style, exstyle, color, bkcolor, font
+			labelStyle, labelExStyle, labelColor, labelBkColor, labelFont
+		}
+		{
+			type:  "edit"
+			id:    "name" (must be unique, without spaces)
+			label: "label text"
+			lines: linesCount (default is 3)
 
-    margin
-    style, exstyle, color, bkcolor, font
-    labelColor, labelBkColor, labelStyle, labelExStyle, labelFont
-    >
-  }
-]
+			optionals:
+			----------
+			value: "initial value"
+			margin
+			style, exstyle, color, bkcolor, font
+			labelStyle, labelExStyle, labelColor, labelBkColor, labelFont
+		}
+		{
+			type:  "date"
+			id:    "name" (must be unique, without spaces)
+			label: "label text"
+
+			optionals:
+			----------
+			value: "initial value"
+			margin
+			style, exstyle, color, bkcolor, font
+			labelStyle, labelExStyle, labelColor, labelBkColor, labelFont
+		}
+		{
+			type:  "combo"
+			id:    "name" (must be unique, without spaces)
+			label: "label text"
+
+			optionals:
+			----------
+			options: ["option0", "option1" ...]
+			selected: 0|1|...|N OR "option0"|"option1"|...|"optionN"
+			margin
+			style, exstyle, color, bkcolor, font
+			labelStyle, labelExStyle, labelColor, labelBkColor, labelFont
+		}
+	]
 }
 ```
 
@@ -204,14 +211,14 @@ Local $sJSON = '{ title:"Login" font:[10, 400, 0, "Consolas"] controls:[' & _
   '{type:"check", id:"remember", label:"Remember me", value:true}' & _
 ']}'
 
-Local $oRet = advInputBox($sJSON, _validationFunc)
+Local $oRet = advInputBox($sJSON, _validationFunc, "some user data...")
 If @error Then
   MsgBox(64, "Example1", "Dialog canceled")
 Else
   MsgBox(64, "Example1", "Return: " & Json_Encode($oRet, 128))
 EndIf
 
-Func _validationFunc($hGUI, $oData, $oCtrlIDs, $oLabelsCtrlIDs)
+Func _validationFunc($hGUI, $oData, $oCtrlIDs, $vUserData)
 	Local $sUser = Json_ObjGet($oData, "username"), $sPass = Json_ObjGet($oData, "password")
 	If $sUser == "admin" And $sPass == "password" Then Return True
 

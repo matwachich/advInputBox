@@ -31,11 +31,11 @@ EndFunc
 
 ; All controls
 Func Example2()
-	Local $sJSON = '{ title:"Showcase" font:[10, 600, 0, "Cambria"] controls:[' & _
+	Local $sJSON = '{ title:"Showcase" font:[10, 600, 0, "Calibri"] controls:[' & _
 		'{type:"label", text:"Enter you personal informations (please :p)"},' & _
 		'{type:"input", id:"firstname", label:"First name"},' & _
 		'{type:"input", id:"lastname", label:"Last name"},' & _
-		'{type:"combo", id:"sexe", label:"Sexe", options:["Male", "Female"], selected:-1},' & _ ; selected = 0 for male, = 1 for female
+		'{type:"combo", id:"sexe", label:"Sexe", options:["Male", "Female"], selected:-1},' & _ ; selected = 0 for male, = 1 for female ; or you can use the exact same string as in options "Male" or "Female"
 		'{type:"date", id:"dob", label:"Date of birth", value:"2000/01/01", style:0},' & _ ; $DTS_SHORTDATEFORMAT
 		'{type:"separator"},' & _
 		'{type:"edit", id:"address", label:"Address", lines:5},' & _
@@ -53,7 +53,7 @@ EndFunc
 ; Validation function
 Func Example3()
 	Local $sJSON = '{ title:"Login" font:[10, 400, 0, "Consolas"] controls:[' & _
-		'{type:"label", text:"Use this form to login to your account", font:[14, 600, 0, "Consolas"]}' & _
+		'{type:"label", text:"Use this form to login to your account", style:' & $ES_CENTER & ', font:[14, 600, 0, "Consolas"]}' & _
 		'{type:"input", id:"username", label:"Username"}' & _
 		'{type:"input", id:"password", label:"Password", style:"' & BitOR($GUI_SS_DEFAULT_INPUT,$ES_PASSWORD) & '"}' & _
 		'{type:"check", id:"remember", label:"Remember me", value:true}' & _
@@ -67,12 +67,12 @@ Func Example3()
 	EndIf
 EndFunc
 
-Func _validationFunc($hGUI, $oData, $oCtrlIDs, $oLabelsCtrlIDs)
+Func _validationFunc($hGUI, $oData, $oCtrlIDs, $vUserData)
 	Local $sUser = Json_ObjGet($oData, "username"), $sPass = Json_ObjGet($oData, "password")
 	If $sUser == "admin" And $sPass == "password" Then Return True
 
-	GUICtrlSetBkColor(Json_ObjGet($oCtrlIDs, "username"), 0xFFCCCC)
-	GUICtrlSetBkColor(Json_ObjGet($oCtrlIDs, "password"), 0xFFCCCC)
+	GUICtrlSetBkColor(Json_ObjGet($oCtrlIDs, "username")[1], 0xFFCCCC)
+	GUICtrlSetBkColor(Json_ObjGet($oCtrlIDs, "password")[1], 0xFFCCCC)
 	GUICtrlSetData(Json_ObjGet($oCtrlIDs, "password"), "")
 	Return False
 EndFunc

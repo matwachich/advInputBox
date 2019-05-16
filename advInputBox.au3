@@ -69,7 +69,7 @@ JSON definition {
 		}
 		{
 			type:  "input"
-			id:    "name" (must be unique)
+			id:    "name" (must be unique, without spaces)
 			label: "label text"
 
 			optionals:
@@ -78,11 +78,10 @@ JSON definition {
 			margin
 			style, exstyle, color, bkcolor, font
 			labelStyle, labelExStyle, labelColor, labelBkColor, labelFont
-			>
 		}
 		{
 			type:  "edit"
-			id:    "name" (must be unique)
+			id:    "name" (must be unique, without spaces)
 			label: "label text"
 			lines: linesCount (default is 3)
 
@@ -95,7 +94,7 @@ JSON definition {
 		}
 		{
 			type:  "date"
-			id:    "name" (must be unique)
+			id:    "name" (must be unique, without spaces)
 			label: "label text"
 
 			optionals:
@@ -107,7 +106,7 @@ JSON definition {
 		}
 		{
 			type:  "combo"
-			id:    "name" (must be unique)
+			id:    "name" (must be unique, without spaces)
 			label: "label text"
 
 			optionals:
@@ -133,10 +132,9 @@ JSON definition {
 ;                                            - $hInputBoxHGUI:  handle to the InputBox Dialog.
 ;                                            - $oData:          JSON object containing the data entered in the AdvInputBox, keyed
 ;                                                               by "id"s (see controls definitions).
-;                                            - $oCtrlIDs:       JSON object containing the control IDs of the input controls
-;                                                               (inputs, dates, combo boxes, edits, check boxes), keyed by "id"s.
-;                                            - $oLabelsCtrlIDs: JSON object containing the control IDs of the labels associated
-;                                                               with each input control, keyed by "id"s.
+;                                            - $oCtrlIDs:       JSON object containing the control IDs of the input and label
+;                                                               controls, keyed by "id"s.
+;                                                               { "id": [labelID, inputCtrlID], ... }
 ;                                            - $vUserData:      user data
 ;                                         If the function returns True, the advInputBox call will return the same $oData object.
 ;                                         Otherwise, nothing happens (the InputBox stays opened).
@@ -177,7 +175,7 @@ Func advInputBox($sJSON, $fnValidation = Null, $vUserData = Null, $hParentGUI = 
 	Local $i = 0, $sType, $oLabel, $iMaxCalculatedLabelsWidth = 0
 	Do
 		$sType = StringLower(Json_ObjGet($aControls[$i], "type"))
-		If $sType <> "separator" And $sType <> "label" And $sType <> "inputLabel" And $sType <> "inputBtn" Then
+		If $sType <> "separator" And $sType <> "label" And $sType <> "inputLabel" Then
 			; a label is mendatory for all input controls
 			If Not Json_ObjExists($aControls[$i], "label") Or Json_ObjGet($aControls[$i], "label") == "" Then
 				Json_ObjPut($aControls[$i], "label", Json_ObjGet($aControls[$i], "type") & ":" & Json_ObjGet($aControls[$i], "id"))
@@ -191,6 +189,7 @@ Func advInputBox($sJSON, $fnValidation = Null, $vUserData = Null, $hParentGUI = 
 			$oLabel = Json_ObjCreate()
 			Json_ObjPut($oLabel, "type", "inputLabel")
 			Json_ObjPut($oLabel, "text", Json_ObjGet($aControls[$i], "label"))
+			Json_ObjPut($oLabel, "id", Json_ObjGet($aControls[$i], "id"))
 
 			If Json_ObjExists($aControls[$i], "margin") Then Json_ObjPut($oLabel, "margin", Json_ObjGet($aControls[$i], "margin"))
 			If Json_ObjExists($aControls[$i], "labelStyle") Then Json_ObjPut($oLabel, "style", Json_ObjGet($aControls[$i], "labelStyle"))
@@ -293,6 +292,7 @@ Func advInputBox($sJSON, $fnValidation = Null, $vUserData = Null, $hParentGUI = 
 					If $iInputLabelNextHeight > $iNextHeight Then $iNextHeight = $iInputLabelNextHeight
 				EndIf
 			; ---
+			; TODOs
 ;~ 			Case "file"
 ;~ 			Case "color"
 ;~ 			Case "font"
@@ -315,6 +315,10 @@ Func advInputBox($sJSON, $fnValidation = Null, $vUserData = Null, $hParentGUI = 
 	If Json_ObjExists($oJSON, "bkcolor") Then GUISetBkColor(Json_ObjGet($oJSON, "bkcolor"), $hGUI)
 	If $aDefaultFont <> Null Then GUISetFont($aDefaultFont[0], $aDefaultFont[1], $aDefaultFont[2], $aDefaultFont[3])
 
+	; this object will hold all CtrlIDs of input controls and theirs labels
+	; $oCtrlIDs = { "id": [labelID, ctrlID], ... }
+	Local $oCtrlIDs = Json_ObjCreate()
+
 	For $i = 0 To UBound($aControls) - 1
 		$sType = StringLower(Json_ObjGet($aControls[$i], "type"))
 		Switch $sType
@@ -324,51 +328,85 @@ Func advInputBox($sJSON, $fnValidation = Null, $vUserData = Null, $hParentGUI = 
 					Json_ObjGet($aControls[$i], "_w"), Json_ObjGet($aControls[$i], "_h"), _
 					__advInputBox_objGet($aControls[$i], "style", -1), __advInputBox_objGet($aControls[$i], "exstyle", -1) _
 				))
+
 				GUICtrlSetBkColor(-1, __advInputBox_objGet($aControls[$i], "color", 0x00000000))
+			; ---
 			Case "label", "inputLabel"
-				Json_ObjPut($aControls[$i], "_ctrlID", GUICtrlCreateLabel( _
+				$vTmp = GUICtrlCreateLabel( _
 					Json_ObjGet($aControls[$i], "text"), _
 					Json_ObjGet($aControls[$i], "_x"), Json_ObjGet($aControls[$i], "_y"), _
 					Json_ObjGet($aControls[$i], "_w"), Json_ObjGet($aControls[$i], "_h"), _
 					__advInputBox_objGet($aControls[$i], "style", -1), __advInputBox_objGet($aControls[$i], "exstyle", -1) _
-				))
+				)
+
+				Json_ObjPut($aControls[$i], "_ctrlID", $vTmp)
+				If $sType = "inputLabel" Then Json_Put($oCtrlIDs, "." & Json_ObjGet($aControls[$i], "id") & "[0]", $vTmp)
+			; ---
 			Case "input"
-				Json_ObjPut($aControls[$i], "_ctrlID", GUICtrlCreateInput( _
-					Json_ObjGet($aControls[$i], "value"), _
+				$vTmp = GUICtrlCreateInput( _
+					__advInputBox_objGet($aControls[$i], "value", ""), _
 					Json_ObjGet($aControls[$i], "_x"), Json_ObjGet($aControls[$i], "_y"), _
 					Json_ObjGet($aControls[$i], "_w"), Json_ObjGet($aControls[$i], "_h"), _
 					__advInputBox_objGet($aControls[$i], "style", -1), __advInputBox_objGet($aControls[$i], "exstyle", -1) _
-				))
+				)
+
+				Json_ObjPut($aControls[$i], "_ctrlID", $vTmp)
+				Json_Put($oCtrlIDs, "." & Json_ObjGet($aControls[$i], "id") & "[1]", $vTmp)
+			; ---
 			Case "date"
-				Json_ObjPut($aControls[$i], "_ctrlID", GUICtrlCreateDate( _
-					Json_ObjGet($aControls[$i], "value"), _
+				$vTmp = GUICtrlCreateDate( _
+					__advInputBox_objGet($aControls[$i], "value", @YEAR & "/" & @MON & "/" & @MDAY), _
 					Json_ObjGet($aControls[$i], "_x"), Json_ObjGet($aControls[$i], "_y"), _
 					Json_ObjGet($aControls[$i], "_w"), Json_ObjGet($aControls[$i], "_h"), _
 					__advInputBox_objGet($aControls[$i], "style", -1), __advInputBox_objGet($aControls[$i], "exstyle", -1) _
-				))
+				)
+
+				Json_ObjPut($aControls[$i], "_ctrlID", $vTmp)
+				Json_Put($oCtrlIDs, "." & Json_ObjGet($aControls[$i], "id") & "[1]", $vTmp)
+			; ---
 			Case "combo"
-				Json_ObjPut($aControls[$i], "_ctrlID", GUICtrlCreateCombo( _
-					Json_ObjGet($aControls[$i], "value"), _
+				$vTmp = GUICtrlCreateCombo( _
+					__advInputBox_objGet($aControls[$i], "value", ""), _
 					Json_ObjGet($aControls[$i], "_x"), Json_ObjGet($aControls[$i], "_y"), _
 					Json_ObjGet($aControls[$i], "_w"), Json_ObjGet($aControls[$i], "_h"), _
 					__advInputBox_objGet($aControls[$i], "style", -1), __advInputBox_objGet($aControls[$i], "exstyle", -1) _
-				))
+				)
+
+				Json_ObjPut($aControls[$i], "_ctrlID", $vTmp)
+				Json_Put($oCtrlIDs, "." & Json_ObjGet($aControls[$i], "id") & "[1]", $vTmp)
+
 				GUICtrlSetData(-1, _ArrayToString(__advInputBox_objGet($aControls[$i], "options", ""), Opt("GUIDataSeparatorChar")))
-				_GUICtrlComboBox_SetCurSel(GUICtrlGetHandle(-1), __advInputBox_objGet($aControls[$i], "selected", -1))
+
+				$vTmp = __advInputBox_objGet($aControls[$i], "selected", -1)
+				If Not IsString($vTmp) Then
+					_GUICtrlComboBox_SetCurSel(GUICtrlGetHandle(-1), $vTmp)
+				Else
+					_GUICtrlComboBox_SetCurSel(GUICtrlGetHandle(-1), _GUICtrlComboBox_FindStringExact(GUICtrlGetHandle(-1), $vTmp))
+				EndIf
+			; ---
 			Case "edit"
-				Json_ObjPut($aControls[$i], "_ctrlID", GUICtrlCreateEdit( _
-					Json_ObjGet($aControls[$i], "value"), _
+				$vTmp = GUICtrlCreateEdit( _
+					__advInputBox_objGet($aControls[$i], "value", ""), _
 					Json_ObjGet($aControls[$i], "_x"), Json_ObjGet($aControls[$i], "_y"), _
 					Json_ObjGet($aControls[$i], "_w"), Json_ObjGet($aControls[$i], "_h"), _
 					__advInputBox_objGet($aControls[$i], "style", -1), __advInputBox_objGet($aControls[$i], "exstyle", -1) _
-				))
+				)
+
+				Json_ObjPut($aControls[$i], "_ctrlID", $vTmp)
+				Json_Put($oCtrlIDs, "." & Json_ObjGet($aControls[$i], "id") & "[1]", $vTmp)
+			; ---
 			Case "check"
-				Json_ObjPut($aControls[$i], "_ctrlID", GUICtrlCreateCheckbox("", _
+				$vTmp = GUICtrlCreateCheckbox("", _
 					Json_ObjGet($aControls[$i], "_x"), Json_ObjGet($aControls[$i], "_y"), _
 					Json_ObjGet($aControls[$i], "_w"), Json_ObjGet($aControls[$i], "_h"), _
 					__advInputBox_objGet($aControls[$i], "style", -1), __advInputBox_objGet($aControls[$i], "exstyle", -1) _
-				))
+				)
+
+				Json_ObjPut($aControls[$i], "_ctrlID", $vTmp)
+				Json_Put($oCtrlIDs, "." & Json_ObjGet($aControls[$i], "id") & "[1]", $vTmp)
+
 				GUICtrlSetState(-1, Json_ObjGet($aControls[$i], "value") ? 1 : 4) ; $GUI_CHECKED, $GUI_UNCHECKED
+			; ---
 		EndSwitch
 
 		If $sType <> "separator" Then
@@ -390,7 +428,7 @@ Func advInputBox($sJSON, $fnValidation = Null, $vUserData = Null, $hParentGUI = 
 	$vTmp = Opt("GUICloseOnEsc", 1)
 	GUISetState(@SW_SHOW, $hGUI)
 
-	Local $oRet = Json_ObjCreate(), $oLabelsIDs = Json_ObjCreate(), $oCtrlIDs = Json_ObjCreate()
+	Local $oRet = Json_ObjCreate()
 	While 1
 		$aMsg = GUIGetMsg(1)
 		If $aMsg[1] == $hGUI Then
@@ -408,8 +446,6 @@ Func advInputBox($sJSON, $fnValidation = Null, $vUserData = Null, $hParentGUI = 
 				Case $iBtnOK
 					For $i = 0 To Ubound($aControls) - 1
 						If Json_ObjExists($aControls[$i], "id") And Json_ObjExists($aControls[$i], "_ctrlID") Then
-							Json_ObjPut($oCtrlIDs, Json_ObjGet($aControls[$i], "id"), Json_ObjGet($aControls[$i], "_ctrlID"))
-							Json_ObjPut($oLabelsIDs, Json_ObjGet($aControls[$i], "id"), Json_ObjGet($aControls[$i - 1], "_ctrlID")) ; WARNING: this implies that an input control MUST ALWAYS BE PRECEEDED by an input label
 							Switch StringLower(Json_ObjGet($aControls[$i], "type"))
 								Case "check"
 									Json_ObjPut($oRet, Json_ObjGet($aControls[$i], "id"), GUICtrlRead(Json_ObjGet($aControls[$i], "_ctrlID")) == $GUI_CHECKED)
@@ -418,7 +454,7 @@ Func advInputBox($sJSON, $fnValidation = Null, $vUserData = Null, $hParentGUI = 
 							EndSwitch
 						EndIf
 					Next
-					If Not IsFunc($fnValidation) Or $fnValidation($hGUI, $oRet, $oCtrlIDs, $oLabelsIDs, $vUserData) Then
+					If Not IsFunc($fnValidation) Or $fnValidation($hGUI, $oRet, $oCtrlIDs, $vUserData) Then
 						GUIDelete($hGUI)
 						Opt("GUICloseOnEsc", $vTmp)
 						Return $oRet
