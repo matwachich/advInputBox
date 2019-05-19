@@ -3,7 +3,7 @@
 
 #include "advInputBox.au3"
 
-For $i = 1 To 3
+For $i = 1 To 4
 	Call("Example" & $i)
 Next
 
@@ -39,6 +39,7 @@ Func Example2()
 		'{type:"date", id:"dob", label:"Date of birth", value:"2000/01/01", style:0},' & _ ; $DTS_SHORTDATEFORMAT
 		'{type:"separator"},' & _
 		'{type:"edit", id:"address", label:"Address", lines:5},' & _
+		'{type:"list", id:"options", label:"Options", options:["First", "Second", "Third"], selected:["First"]}' & _
 		'{type:"check", id:"agree", label:"I agree to share my personnal informations with big brother", value:true}' & _
 	']}'
 
@@ -76,3 +77,17 @@ Func _validationFunc($hGUI, $oData, $oCtrlIDs, $vUserData)
 	GUICtrlSetData(Json_ObjGet($oCtrlIDs, "password"), "")
 	Return False
 EndFunc
+
+Func Example4()
+	Local $sJSON = '{ title:"ListBox test", font:[10, 400, 0, "Consolas"], controls:[' & _
+		'{type:"list", id:"options", label:"You can use the \"list\" control to select multiple options", options:["First", "Second", "Third", "Fourth"], selected:["Third"]}' & _
+	']}'
+
+	Local $oRet = advInputBox($sJSON)
+	If @error Then
+		MsgBox(64, "Example1", "Dialog canceled")
+	Else
+		MsgBox(64, "Example1", "Return: " & Json_Encode($oRet, 128))
+	EndIf
+EndFunc
+

@@ -25,6 +25,7 @@
 
 #include <Array.au3>
 #include <GuiComboBox.au3>
+#include <GuiListBox.au3>
 #include <GUIConstantsEx.au3>
 #include <String.au3>
 
@@ -113,6 +114,22 @@ JSON definition {
 			----------
 			options: ["option0", "option1" ...]
 			selected: 0|1|...|N OR "option0"|"option1"|...|"optionN"
+			margin
+			style, exstyle, color, bkcolor, font
+			labelStyle, labelExStyle, labelColor, labelBkColor, labelFont
+		}
+		{
+			type:  "list"
+			id:    "name" (must be unique, without spaces)
+			label: "label text"
+
+			options: ["option0", "option1" ...]
+
+			optionals:
+			----------
+			lines: -1 (maximum displayed lines (control height) ; -1 means all options must be displayed)
+			selected: ["option0", "option1" ...]
+
 			margin
 			style, exstyle, color, bkcolor, font
 			labelStyle, labelExStyle, labelColor, labelBkColor, labelFont
@@ -292,6 +309,22 @@ Func advInputBox($sJSON, $fnValidation = Null, $vUserData = Null, $hParentGUI = 
 					If $iInputLabelNextHeight > $iNextHeight Then $iNextHeight = $iInputLabelNextHeight
 				EndIf
 			; ---
+			Case "list"
+				$vTmp = __advInputBox_objGet($aControls[$i], "lines", -1)
+				If $vTmp <= 0 Then $vTmp = UBound(Json_ObjGet($aControls[$i], "options"))
+
+				$aSZ = __advInputBox_stringSize( _
+					_StringRepeat("Line" & @CRLF, $vTmp - 1), _
+					__advInputBox_objGet($aControls[$i], "font", $aDefaultFont) _
+				)
+
+				Json_ObjPut($aControls[$i], "_x", $iMaxCalculatedLabelsWidth + (2 * $iMargin))
+				Json_ObjPut($aControls[$i], "_y", $iNextHeight)
+				Json_ObjPut($aControls[$i], "_w", $iInputsWidth)
+				Json_ObjPut($aControls[$i], "_h", $aSZ[3])
+
+				$iNextHeight += $aSZ[3] + __advInputBox_objGet($aControls[$i], "margin", $iMargin)
+			; ---
 			; TODOs
 ;~ 			Case "file"
 ;~ 			Case "color"
@@ -407,6 +440,26 @@ Func advInputBox($sJSON, $fnValidation = Null, $vUserData = Null, $hParentGUI = 
 
 				GUICtrlSetState(-1, Json_ObjGet($aControls[$i], "value") ? 1 : 4) ; $GUI_CHECKED, $GUI_UNCHECKED
 			; ---
+			Case "list"
+				$vTmp = GUICtrlCreateList("", _
+					Json_ObjGet($aControls[$i], "_x"), Json_ObjGet($aControls[$i], "_y"), _
+					Json_ObjGet($aControls[$i], "_w"), Json_ObjGet($aControls[$i], "_h"), _
+					__advInputBox_objGet($aControls[$i], "style", BitOR($WS_BORDER,$WS_VSCROLL,$LBS_MULTIPLESEL,$LBS_NOINTEGRALHEIGHT)), _
+					__advInputBox_objGet($aControls[$i], "exstyle", 0) _
+				)
+
+				Json_ObjPut($aControls[$i], "_ctrlID", $vTmp)
+				Json_Put($oCtrlIDs, "." & Json_ObjGet($aControls[$i], "id") & "[1]", $vTmp)
+
+				GUICtrlSetData(-1, _ArrayToString(Json_ObjGet($aControls[$i], "options"), Opt("GUIDataSeparatorChar")))
+
+				Local $aSel = Json_ObjGet($aControls[$i], "selected")
+				If IsArray($aSel) And UBound($aSel) > 0 Then
+					For $j = 0 To UBound($aSel) - 1
+						_GUICtrlListBox_SetSel($vTmp, _GUICtrlListBox_FindString($vTmp, $aSel[$j], True), 1)
+					Next
+				EndIf
+			; ---
 		EndSwitch
 
 		If $sType <> "separator" Then
@@ -449,6 +502,10 @@ Func advInputBox($sJSON, $fnValidation = Null, $vUserData = Null, $hParentGUI = 
 							Switch StringLower(Json_ObjGet($aControls[$i], "type"))
 								Case "check"
 									Json_ObjPut($oRet, Json_ObjGet($aControls[$i], "id"), GUICtrlRead(Json_ObjGet($aControls[$i], "_ctrlID")) == $GUI_CHECKED)
+								Case "list"
+									$vTmp = _GUICtrlListBox_GetSelItemsText(Json_ObjGet($aControls[$i], "_ctrlID"))
+									_ArrayDelete($vTmp, 0)
+									Json_ObjPut($oRet, Json_ObjGet($aControls[$i], "id"), $vTmp)
 								Case Else
 									Json_ObjPut($oRet, Json_ObjGet($aControls[$i], "id"), GUICtrlRead(Json_ObjGet($aControls[$i], "_ctrlID")))
 							EndSwitch
