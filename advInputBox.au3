@@ -291,7 +291,7 @@ Func advInputBox($sJSON, $fnValidation = Null, $vUserData = Null, $hParentGUI = 
 				Json_ObjPut($aControls[$i], "_w", $iInputsWidth)
 				Json_ObjPut($aControls[$i], "_h", $aSZ[3] + 21 + $vTmp)
 
-				$iNextHeight += $aSZ[3] + 21 + 4 + __advInputBox_objGet($aControls[$i], "margin", $iMargin)
+				$iNextHeight += $aSZ[3] + 21 + $vTmp + __advInputBox_objGet($aControls[$i], "margin", $iMargin)
 				If $iInputLabelNextHeight > $iNextHeight Then $iNextHeight = $iInputLabelNextHeight
 			; ---
 			Case "check"
