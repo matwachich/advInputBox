@@ -49,6 +49,7 @@ JSON definition {
 	btnColor: OK button color
 	btnBkColor: OK button BK color
 	font: [size, weight, style, name]
+	accels: [{hotkey:"", action:""}, ...]
 
 // the only necessary one is this (note that in each control type, the values between <> are optionals)
 	controls: [
@@ -145,7 +146,8 @@ JSON definition {
 ; Parameters ....: $sJSON               - a JSON string used to configure all aspects of the Dialog (see documentation above and
 ;                                         examples to understand).
 ;                  $fnValidation        - [optional] data validation function. If provided, it is called on OK button press.
-;                                         It must be of the form _validation($hInputBoxHGUI, $oData, $oCtrlIDs, $oLabelsCtrlIDs).
+;                                         It must be of the form:
+;                                         _validation($hInputBoxHGUI, $oData, $oCtrlIDs, $vUserData).
 ;                                            - $hInputBoxHGUI:  handle to the InputBox Dialog.
 ;                                            - $oData:          JSON object containing the data entered in the AdvInputBox, keyed
 ;                                                               by "id"s (see controls definitions).
@@ -156,6 +158,10 @@ JSON definition {
 ;                                         If the function returns True, the advInputBox call will return the same $oData object.
 ;                                         Otherwise, nothing happens (the InputBox stays opened).
 ;                                         Default is Null (no callback, the functions returns immediatly on OK button press).
+;                  $fnAccels            - [optional] function called on Accelerator hotkey press. It must be of the form:
+;                                         _accels($hInputBoxHGUI, $sAction, $oData, $oCtrlIDs, $vUserData).
+;                                         All parameters are the same as validation function. $sAction is the "action" value
+;                                         defined in accel object.
 ;                  $vUserData           - [optional] user data passed to $fnValidation. Default is Null.
 ;                  $hParentGUI          - [optional] a handle to the parent GUI. Default is Null.
 ; Return values .: - On OK button press, if no validation callback is provided or if it returns True : the function returns a JSON
@@ -170,7 +176,7 @@ JSON definition {
 ; Link ..........:
 ; Example .......: No
 ; ===============================================================================================================================
-Func advInputBox($sJSON, $fnValidation = Null, $vUserData = Null, $hParentGUI = Null)
+Func advInputBox($sJSON, $fnValidation = Null, $fnAccels = Null, $vUserData = Null, $hParentGUI = Null)
 	Local $oJSON = Json_Decode($sJSON)
 	If @error Then Return SetError(-1, 0, Null)
 
@@ -348,6 +354,17 @@ Func advInputBox($sJSON, $fnValidation = Null, $vUserData = Null, $hParentGUI = 
 	If Json_ObjExists($oJSON, "bkcolor") Then GUISetBkColor(Json_ObjGet($oJSON, "bkcolor"), $hGUI)
 	If $aDefaultFont <> Null Then GUISetFont($aDefaultFont[0], $aDefaultFont[1], $aDefaultFont[2], $aDefaultFont[3])
 
+	; build accelerators
+	Local $aAccelsDef = Json_ObjGet($oJSON, "accels"), $aAccels[0][0]
+	For $i = 0 To UBound($aAccelsDef) - 1
+		$vTmp = GUICtrlCreateDummy()
+		Json_ObjPut($aAccelsDef[$i], "_ctrlID", $vTmp)
+		ReDim $aAccels[UBound($aAccels) + 1][2]
+		$aAccels[UBound($aAccels) - 1][0] = Json_ObjGet($aAccelsDef[$i], "hotkey")
+		$aAccels[UBound($aAccels) - 1][1] = $vTmp
+	Next
+	GUISetAccelerators($aAccels, $hGUI)
+
 	; this object will hold all CtrlIDs of input controls and theirs labels
 	; $oCtrlIDs = { "id": [labelID, ctrlID], ... }
 	Local $oCtrlIDs = Json_ObjCreate()
@@ -486,43 +503,55 @@ Func advInputBox($sJSON, $fnValidation = Null, $vUserData = Null, $hParentGUI = 
 		$aMsg = GUIGetMsg(1)
 		If $aMsg[1] == $hGUI Then
 			Switch $aMsg[0]
-				Case $GUI_EVENT_MINIMIZE
-					_GUIScrollbars_Minimize($hGUI)
-				Case $GUI_EVENT_RESTORE
-					_GUIScrollbars_Restore($hGUI)
-				; ---
 				Case $GUI_EVENT_CLOSE
 					GUIDelete($hGUI)
 					Opt("GUICloseOnEsc", $vTmp)
 					Return SetError(1, 0, Null)
 				; ---
+				Case $GUI_EVENT_MINIMIZE
+					_GUIScrollbars_Minimize($hGUI)
+				Case $GUI_EVENT_RESTORE
+					_GUIScrollbars_Restore($hGUI)
+				; ---
 				Case $iBtnOK
-					For $i = 0 To Ubound($aControls) - 1
-						If Json_ObjExists($aControls[$i], "id") And Json_ObjExists($aControls[$i], "_ctrlID") Then
-							Switch StringLower(Json_ObjGet($aControls[$i], "type"))
-								Case "check"
-									Json_ObjPut($oRet, Json_ObjGet($aControls[$i], "id"), GUICtrlRead(Json_ObjGet($aControls[$i], "_ctrlID")) == $GUI_CHECKED)
-								Case "list"
-									$vTmp = _GUICtrlListBox_GetSelItemsText(Json_ObjGet($aControls[$i], "_ctrlID"))
-									_ArrayDelete($vTmp, 0)
-									Json_ObjPut($oRet, Json_ObjGet($aControls[$i], "id"), $vTmp)
-								Case Else
-									Json_ObjPut($oRet, Json_ObjGet($aControls[$i], "id"), GUICtrlRead(Json_ObjGet($aControls[$i], "_ctrlID")))
-							EndSwitch
-						EndIf
-					Next
+					__advInputBox_readValues($aControls, $oRet)
 					If Not IsFunc($fnValidation) Or $fnValidation($hGUI, $oRet, $oCtrlIDs, $vUserData) Then
 						GUIDelete($hGUI)
 						Opt("GUICloseOnEsc", $vTmp)
 						Return $oRet
 					EndIf
 			EndSwitch
+			; ---
+			For $i = 0 To UBound($aAccelsDef) - 1
+				If $aMsg[0] = Json_ObjGet($aAccelsDef[$i], "_ctrlID") Then
+					__advInputBox_readValues($aControls, $oRet)
+					$fnAccels($hGUI, Json_ObjGet($aAccelsDef[$i], "action"), $oRet, $oCtrlIDs, $vUserData)
+				EndIf
+			Next
 		EndIf
 	WEnd
 EndFunc
 
 ; -------------------------------------------------------------------------------------------------
 ; internals
+
+Func __advInputBox_readValues(ByRef $aControls, ByRef $oRet)
+	Local $vTmp
+	For $i = 0 To Ubound($aControls) - 1
+		If Json_ObjExists($aControls[$i], "id") And Json_ObjExists($aControls[$i], "_ctrlID") Then
+			Switch StringLower(Json_ObjGet($aControls[$i], "type"))
+				Case "check"
+					Json_ObjPut($oRet, Json_ObjGet($aControls[$i], "id"), GUICtrlRead(Json_ObjGet($aControls[$i], "_ctrlID")) == $GUI_CHECKED)
+				Case "list"
+					$vTmp = _GUICtrlListBox_GetSelItemsText(Json_ObjGet($aControls[$i], "_ctrlID"))
+					_ArrayDelete($vTmp, 0)
+					Json_ObjPut($oRet, Json_ObjGet($aControls[$i], "id"), $vTmp)
+				Case Else
+					Json_ObjPut($oRet, Json_ObjGet($aControls[$i], "id"), GUICtrlRead(Json_ObjGet($aControls[$i], "_ctrlID")))
+			EndSwitch
+		EndIf
+	Next
+EndFunc
 
 Func __advInputBox_stringSize($sText, $aFont = Null, $iMaxWidth = 0)
 	Local $aRet

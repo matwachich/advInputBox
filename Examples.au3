@@ -3,7 +3,7 @@
 
 #include "advInputBox.au3"
 
-For $i = 1 To 4
+For $i = 1 To 5
 	Call("Example" & $i)
 Next
 
@@ -91,3 +91,27 @@ Func Example4()
 	EndIf
 EndFunc
 
+Func Example5()
+	Local $sJSON = '{ title:"Accelerators test" font:[10,400,0,"Consolas"] controls:[' & _
+		'{type:"label" text:"You can use hotkeys to fire custom events\r\nTry: F1, F2, Ctrl+S"}' & _
+		'{type:"input" id:"input" label:"Some inputBox"}' & _
+	'] accels:[' & _
+		'{hotkey:"{F1}" id:"action_F1"}' & _
+		'{hotkey:"{F2}" id:"action_F2"}' & _
+		'{hotkey:"^s" id:"action_Ctrl_S"}' & _
+	']}'
+
+	Local $oRet = advInputBox($sJSON, Null, _example5_accelsCallback)
+	If @error Then
+		MsgBox(64, "Example1", "Dialog canceled")
+	Else
+		MsgBox(64, "Example1", "Return: " & Json_Encode($oRet, 128))
+	EndIf
+EndFunc
+Func _example5_accelsCallback($hGUI, $sActionID, $oData, $oCtrlIDs, $vUserData)
+	Switch $sActionID
+		Case "action_F1", "action_F2", "action_Ctrl_S"
+			MsgBox(64, "Accelerators", "Event fired: " & $sActionID)
+			GUICtrlSetData(Json_Get($oCtrlIDs, ".input[1]"), "Accel: " & $sActionID)
+	EndSwitch
+EndFunc
