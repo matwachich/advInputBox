@@ -29,6 +29,7 @@
 #include <GuiListBox.au3>
 #include <GUIConstantsEx.au3>
 #include <EditConstants.au3>
+#include <WinAPILocale.au3>
 #include <String.au3>
 
 #include "Json.au3"
@@ -81,6 +82,7 @@ JSON definition {
 			----------
 			value: "initial value"
 			margin
+
 			style, exstyle, color, bkcolor, font
 			labelStyle, labelExStyle, labelColor, labelBkColor, labelFont
 		}
@@ -94,6 +96,7 @@ JSON definition {
 			----------
 			value: "initial value"
 			margin
+
 			style, exstyle, color, bkcolor, font
 			labelStyle, labelExStyle, labelColor, labelBkColor, labelFont
 		}
@@ -105,7 +108,23 @@ JSON definition {
 			optionals:
 			----------
 			value: "initial value" (must be YYYY/MM/DD like GUICtrlSetData)
+			format: if set, will be used with _WinAPI_GetDateFormat ; if not, default is yyyy/MM/dd format (_NowCalc)
 			margin
+
+			style, exstyle, color, bkcolor, font
+			labelStyle, labelExStyle, labelColor, labelBkColor, labelFont
+		}
+		{
+			type:  "time"
+			id:    "name" (must be unique, without spaces)
+			label: "label text"
+
+			optionals:
+			----------
+			value: "initial value" (must be YYYY/MM/DD like GUICtrlSetData)
+			format: if set, will be used with _WinAPI_GetTimeFormat ; if not, default is HH:mm:ss format
+			margin
+
 			style, exstyle, color, bkcolor, font
 			labelStyle, labelExStyle, labelColor, labelBkColor, labelFont
 		}
@@ -278,7 +297,7 @@ Func advInputBox($sJSON, $fnValidation = Null, $fnAccels = Null, $vUserData = Nu
 
 				$iInputLabelNextHeight = $iNextHeight + $aSZ[3] + __advInputBox_objGet($aControls[$i], "margin", $iMargin)
 			; ---
-			Case "input", "date", "combo"
+			Case "input", "date", "time", "combo"
 				$aSZ = __advInputBox_stringSize("A", __advInputBox_objGet($aControls[$i], "font", $aDefaultFont), $iInputsWidth)
 
 				Json_ObjPut($aControls[$i], "_x", $iMaxCalculatedLabelsWidth + (2 * $iMargin))
@@ -409,10 +428,21 @@ Func advInputBox($sJSON, $fnValidation = Null, $fnAccels = Null, $vUserData = Nu
 			; ---
 			Case "date"
 				$vTmp = GUICtrlCreateDate( _
-					__advInputBox_objGet($aControls[$i], "value", @YEAR & "/" & @MON & "/" & @MDAY), _
+					__advInputBox_objGet($aControls[$i], "value", StringFormat("%04d/%02d/%02d", @YEAR, @MON, @MDAY)), _
 					Json_ObjGet($aControls[$i], "_x"), Json_ObjGet($aControls[$i], "_y"), _
 					Json_ObjGet($aControls[$i], "_w"), Json_ObjGet($aControls[$i], "_h"), _
 					__advInputBox_objGet($aControls[$i], "style", -1), __advInputBox_objGet($aControls[$i], "exstyle", -1) _
+				)
+
+				Json_ObjPut($aControls[$i], "_ctrlID", $vTmp)
+				Json_Put($oCtrlIDs, "." & Json_ObjGet($aControls[$i], "id") & "[1]", $vTmp)
+			; ---
+			Case "time"
+				$vTMp = GUICtrlCreateDate( _
+					__advInputBox_objGet($aControls[$i], "value", StringFormat("%02d:%02d:%02d", @HOUR, @MIN, @SEC)), _
+					Json_ObjGet($aControls[$i], "_x"), Json_ObjGet($aControls[$i], "_y"), _
+					Json_ObjGet($aControls[$i], "_w"), Json_ObjGet($aControls[$i], "_h"), _
+					__advInputBox_objGet($aControls[$i], "style", $DTS_TIMEFORMAT), __advInputBox_objGet($aControls[$i], "exstyle", -1) _
 				)
 
 				Json_ObjPut($aControls[$i], "_ctrlID", $vTmp)
@@ -546,7 +576,18 @@ Func __advInputBox_readValues(ByRef $aControls, ByRef $oRet)
 			Switch StringLower(Json_ObjGet($aControls[$i], "type"))
 				Case "date"
 					$vTmp =  _GUICtrlDTP_GetSystemTimeEx(GUICtrlGetHandle(Json_ObjGet($aControls[$i], "_ctrlID")))
-					Json_ObjPut($oRet, Json_ObjGet($aControls[$i], "id"), StringFormat("%04d/%02d/%02d", $vTmp.Year, $vTmp.Month, $vTmp.Day))
+					Json_ObjPut( _
+						$oRet, _
+						Json_ObjGet($aControls[$i], "id"), _
+						_WinAPI_GetDateFormat(0, $vTmp, 0, __advInputBox_objGet($aControls[$i], "format", "yyyy/MM/dd")) _
+					)
+				Case "time"
+					$vTmp = _GUICtrlDTP_GetSystemTimeEx(GUICtrlGetHandle(Json_ObjGet($aControls[$i], "_ctrlID")))
+					Json_ObjPut( _
+						$oRet, _
+						Json_ObjGet($aControls[$i], "id"), _
+						_WinAPI_GetTimeFormat(0, $vTmp, __advInputBox_objGet($aControls[$i], "format", "HH:mm:ss")) _
+					)
 				Case "check"
 					Json_ObjPut($oRet, Json_ObjGet($aControls[$i], "id"), GUICtrlRead(Json_ObjGet($aControls[$i], "_ctrlID")) == $GUI_CHECKED)
 				Case "list"
