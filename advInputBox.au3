@@ -27,6 +27,7 @@
 #include <GuiComboBox.au3>
 #include <GuiListBox.au3>
 #include <GUIConstantsEx.au3>
+#include <EditConstants.au3>
 #include <String.au3>
 
 #include "Json.au3"
@@ -101,7 +102,7 @@ JSON definition {
 
 			optionals:
 			----------
-			value: "initial value"
+			value: "initial value" (must be YYYY/MM/DD like GUICtrlSetData)
 			margin
 			style, exstyle, color, bkcolor, font
 			labelStyle, labelExStyle, labelColor, labelBkColor, labelFont
@@ -114,7 +115,8 @@ JSON definition {
 			optionals:
 			----------
 			options: ["option0", "option1" ...]
-			selected: 0|1|...|N OR "option0"|"option1"|...|"optionN"
+			value: 0|1|...|N OR "option0"|"option1"|...|"optionN"
+
 			margin
 			style, exstyle, color, bkcolor, font
 			labelStyle, labelExStyle, labelColor, labelBkColor, labelFont
@@ -129,7 +131,7 @@ JSON definition {
 			optionals:
 			----------
 			lines: -1 (maximum displayed lines (control height) ; -1 means all options must be displayed)
-			selected: ["option0", "option1" ...]
+			value: ["option0", "option1" ...]
 
 			margin
 			style, exstyle, color, bkcolor, font
@@ -142,7 +144,7 @@ JSON definition {
 ; #FUNCTION# ====================================================================================================================
 ; Name ..........: advInputBox
 ; Description ...: Just like InputBox, but with more controls and customisation possiblities
-; Syntax ........: advInputBox($sJSON[, $fnValidation = Null[, $hParentGUI = Null]])
+; Syntax ........: advInputBox($sJSON[, $fnValidation = Null[, $fnAccels = Null[, $vUserData ) Null[, $hParentGUI = Null]]]])
 ; Parameters ....: $sJSON               - a JSON string used to configure all aspects of the Dialog (see documentation above and
 ;                                         examples to understand).
 ;                  $fnValidation        - [optional] data validation function. If provided, it is called on OK button press.
@@ -427,7 +429,7 @@ Func advInputBox($sJSON, $fnValidation = Null, $fnAccels = Null, $vUserData = Nu
 
 				GUICtrlSetData(-1, _ArrayToString(__advInputBox_objGet($aControls[$i], "options", ""), Opt("GUIDataSeparatorChar")))
 
-				$vTmp = __advInputBox_objGet($aControls[$i], "selected", -1)
+				$vTmp = __advInputBox_objGet($aControls[$i], "value", -1)
 				If Not IsString($vTmp) Then
 					_GUICtrlComboBox_SetCurSel(GUICtrlGetHandle(-1), $vTmp)
 				Else
@@ -439,7 +441,7 @@ Func advInputBox($sJSON, $fnValidation = Null, $fnAccels = Null, $vUserData = Nu
 					__advInputBox_objGet($aControls[$i], "value", ""), _
 					Json_ObjGet($aControls[$i], "_x"), Json_ObjGet($aControls[$i], "_y"), _
 					Json_ObjGet($aControls[$i], "_w"), Json_ObjGet($aControls[$i], "_h"), _
-					__advInputBox_objGet($aControls[$i], "style", -1), __advInputBox_objGet($aControls[$i], "exstyle", -1) _
+					__advInputBox_objGet($aControls[$i], "style", BitOR($ES_WANTRETURN,$WS_VSCROLL,$ES_AUTOVSCROLL)), __advInputBox_objGet($aControls[$i], "exstyle", -1) _
 				)
 
 				Json_ObjPut($aControls[$i], "_ctrlID", $vTmp)
@@ -470,7 +472,7 @@ Func advInputBox($sJSON, $fnValidation = Null, $fnAccels = Null, $vUserData = Nu
 
 				GUICtrlSetData(-1, _ArrayToString(Json_ObjGet($aControls[$i], "options"), Opt("GUIDataSeparatorChar")))
 
-				Local $aSel = Json_ObjGet($aControls[$i], "selected")
+				Local $aSel = Json_ObjGet($aControls[$i], "value")
 				If IsArray($aSel) And UBound($aSel) > 0 Then
 					For $j = 0 To UBound($aSel) - 1
 						_GUICtrlListBox_SetSel($vTmp, _GUICtrlListBox_FindString($vTmp, $aSel[$j], True), 1)
