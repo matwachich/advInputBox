@@ -207,8 +207,8 @@ Func advInputBox($sJSON, $fnValidation = Null, $fnAccels = Null, $vUserData = Nu
 
 	; get main Dialog variables
 	Local $sDlgTitle = __advInputBox_objGet($oJSON, "title", "Advanced InputBox")
-	Local $iLabelsMaxWidth = __advInputBox_objGet($oJSON, "labelsMaxWidth", 180)
-	Local $iInputsWidth = __advInputBox_objGet($oJSON, "inputsWidth", 250)
+	Local $iLabelsMaxWidth = __advInputBox_objGet($oJSON, "labelsMaxWidth", 300)
+	Local $iInputsWidth = __advInputBox_objGet($oJSON, "inputsWidth", 300)
 	Local $iInputLabelPadding = __advInputBox_objGet($oJSON, "inputLabelPadding", 2)
 	Local $iMaxHeight = __advInputBox_objGet($oJSON, "maxHeight", 600)
 	Local $iMargin = __advInputBox_objGet($oJSON, "margin", 8)
@@ -431,7 +431,7 @@ Func advInputBox($sJSON, $fnValidation = Null, $fnAccels = Null, $vUserData = Nu
 					__advInputBox_objGet($aControls[$i], "value", StringFormat("%04d/%02d/%02d", @YEAR, @MON, @MDAY)), _
 					Json_ObjGet($aControls[$i], "_x"), Json_ObjGet($aControls[$i], "_y"), _
 					Json_ObjGet($aControls[$i], "_w"), Json_ObjGet($aControls[$i], "_h"), _
-					__advInputBox_objGet($aControls[$i], "style", -1), __advInputBox_objGet($aControls[$i], "exstyle", -1) _
+					__advInputBox_objGet($aControls[$i], "style", $DTS_SHORTDATEFORMAT), __advInputBox_objGet($aControls[$i], "exstyle", -1) _
 				)
 
 				Json_ObjPut($aControls[$i], "_ctrlID", $vTmp)
@@ -453,7 +453,7 @@ Func advInputBox($sJSON, $fnValidation = Null, $fnAccels = Null, $vUserData = Nu
 					__advInputBox_objGet($aControls[$i], "value", ""), _
 					Json_ObjGet($aControls[$i], "_x"), Json_ObjGet($aControls[$i], "_y"), _
 					Json_ObjGet($aControls[$i], "_w"), Json_ObjGet($aControls[$i], "_h"), _
-					__advInputBox_objGet($aControls[$i], "style", -1), __advInputBox_objGet($aControls[$i], "exstyle", -1) _
+					__advInputBox_objGet($aControls[$i], "style", BitOR($GUI_SS_DEFAULT_COMBO,$CBS_DROPDOWNLIST)), __advInputBox_objGet($aControls[$i], "exstyle", -1) _
 				)
 
 				Json_ObjPut($aControls[$i], "_ctrlID", $vTmp)
