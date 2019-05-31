@@ -24,6 +24,7 @@
 ; ====================================================================================================================
 
 #include <Array.au3>
+#include <GuiDateTimePicker.au3>
 #include <GuiComboBox.au3>
 #include <GuiListBox.au3>
 #include <GUIConstantsEx.au3>
@@ -50,6 +51,7 @@ JSON definition {
 	btnColor: OK button color
 	btnBkColor: OK button BK color
 	font: [size, weight, style, name]
+
 	accels: [{hotkey:"", action:""}, ...]
 
 // the only necessary one is this (note that in each control type, the values between <> are optionals)
@@ -542,6 +544,9 @@ Func __advInputBox_readValues(ByRef $aControls, ByRef $oRet)
 	For $i = 0 To Ubound($aControls) - 1
 		If Json_ObjExists($aControls[$i], "id") And Json_ObjExists($aControls[$i], "_ctrlID") Then
 			Switch StringLower(Json_ObjGet($aControls[$i], "type"))
+				Case "date"
+					$vTmp =  _GUICtrlDTP_GetSystemTimeEx(GUICtrlGetHandle(Json_ObjGet($aControls[$i], "_ctrlID")))
+					Json_ObjPut($oRet, Json_ObjGet($aControls[$i], "id"), StringFormat("%04d/%02d/%02d", $vTmp.Year, $vTmp.Month, $vTmp.Day))
 				Case "check"
 					Json_ObjPut($oRet, Json_ObjGet($aControls[$i], "id"), GUICtrlRead(Json_ObjGet($aControls[$i], "_ctrlID")) == $GUI_CHECKED)
 				Case "list"
