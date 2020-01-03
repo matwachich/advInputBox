@@ -35,7 +35,7 @@ Func Example2()
 		'{type:"label", text:"Enter you personal informations (please :p)"},' & _
 		'{type:"input", id:"firstname", label:"First name"},' & _
 		'{type:"input", id:"lastname", label:"Last name"},' & _
-		'{type:"combo", id:"sexe", label:"Sexe", options:["Male", "Female"], selected:-1},' & _ ; selected = 0 for male, = 1 for female ; or you can use the exact same string as in options "Male" or "Female"
+		'{type:"combo", id:"sexe", label:"Sexe", options:["Male", "Female"], value:-1},' & _ ; selected = 0 for male, = 1 for female ; or you can use the exact same string as in options "Male" or "Female"
 		'{type:"date", id:"dob", label:"Date of birth", value:"2000/01/01", style:0},' & _ ; $DTS_SHORTDATEFORMAT
 		'{type:"separator"},' & _
 		'{type:"edit", id:"address", label:"Address", lines:5},' & _

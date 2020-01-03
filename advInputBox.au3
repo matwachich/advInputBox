@@ -200,8 +200,13 @@ JSON definition {
 ; Example .......: No
 ; ===============================================================================================================================
 Func advInputBox($sJSON, $fnValidation = Null, $fnAccels = Null, $vUserData = Null, $hParentGUI = Null)
-	Local $oJSON = Json_Decode($sJSON)
-	If @error Then Return SetError(-1, 0, Null)
+	Local $oJSON
+	If IsObj($sJSON) Then
+		$oJSON = $sJSON
+	Else
+		$oJSON = Json_Decode($sJSON)
+		If @error Then Return SetError(-1, 0, Null)
+	EndIf
 
 	Local $vTmp ; just a dummy temporary useful variable
 
@@ -449,8 +454,7 @@ Func advInputBox($sJSON, $fnValidation = Null, $fnAccels = Null, $vUserData = Nu
 				Json_Put($oCtrlIDs, "." & Json_ObjGet($aControls[$i], "id") & "[1]", $vTmp)
 			; ---
 			Case "combo"
-				$vTmp = GUICtrlCreateCombo( _
-					__advInputBox_objGet($aControls[$i], "value", ""), _
+				$vTmp = GUICtrlCreateCombo("", _
 					Json_ObjGet($aControls[$i], "_x"), Json_ObjGet($aControls[$i], "_y"), _
 					Json_ObjGet($aControls[$i], "_w"), Json_ObjGet($aControls[$i], "_h"), _
 					__advInputBox_objGet($aControls[$i], "style", BitOR($GUI_SS_DEFAULT_COMBO,$CBS_DROPDOWNLIST)), __advInputBox_objGet($aControls[$i], "exstyle", -1) _
