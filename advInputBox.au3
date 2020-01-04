@@ -53,6 +53,7 @@ JSON definition {
 	btnBkColor: OK button BK color
 	font: [size, weight, style, name]
 
+	focus: "control id"
 	accels: [{hotkey:"", action:""}, ...]
 
 // the only necessary one is this (note that in each control type, the values between <> are optionals)
@@ -218,6 +219,7 @@ Func advInputBox($sJSON, $fnValidation = Null, $fnAccels = Null, $vUserData = Nu
 	Local $iMaxHeight = __advInputBox_objGet($oJSON, "maxHeight", 600)
 	Local $iMargin = __advInputBox_objGet($oJSON, "margin", 8)
 	Local $aDefaultFont = __advInputBox_objGet($oJSON, "font", Null)
+	Local $sFocusID = __advInputBox_objGet($oJSON, "focus", "")
 
 	Local $aControls = __advInputBox_objGet($oJSON, "controls", Null)
 	If $aControls == Null Or Not IsArray($aControls) Or UBound($aControls) <= 0 Then Return SetError(-1, 0, Null)
@@ -531,6 +533,12 @@ Func advInputBox($sJSON, $fnValidation = Null, $fnAccels = Null, $vUserData = Nu
 	Local $iBtnOK = GUICtrlCreateButton(__advInputBox_objGet($oJSON, "btnText", "OK"), $iMargin, $iNextHeight, $iMaxLabelsAndInputsWidth, 25, 1) ; $BS_DEFPUSHBUTTON
 	If Json_ObjExists($oJSON, "btnColor") Then GUICtrlSetColor(-1, Json_ObjGet($oJSON, "btnColor"))
 	If Json_ObjExists($oJSON, "btnBkColor") Then GUICtrlSetColor(-1, Json_ObjGet($oJSON, "btnBkColor"))
+
+	; set control focus
+	If $sFocusID Then
+		$aFocusCtrl = $oCtrlIDs.Item($sFocusID)
+		If UBound($aFocusCtrl) >= 2 Then ControlFocus($hGUI, "", $aFocusCtrl[1])
+	EndIf
 
 	; enter dialog loop
 	$vTmp = Opt("GUICloseOnEsc", 1)
