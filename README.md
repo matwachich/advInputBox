@@ -1,3 +1,6 @@
+# Deprecated
+Use https://github.com/matwachich/autoit-guiutils
+
 # Advanced InputBox
 Advanced InputBox for AutoIt3, with :
 
